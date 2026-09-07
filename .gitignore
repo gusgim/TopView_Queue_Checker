@@ -1,0 +1,8 @@
+# 절대 커밋 금지 — 로그인 세션/쿠키/프로필 데이터
+automation_local/_chrome_profile/
+scripts/storageState.json
+scripts/storageState.json.backup
+*.pyc
+__pycache__/
+
+automation_local/_chrome_profile_DO_NOT_COMMIT/

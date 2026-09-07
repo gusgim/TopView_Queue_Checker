@@ -1,0 +1,42 @@
+name: TopView 큐 확인
+
+on:
+  schedule:
+    # 매 10분마다 실행. GitHub Actions 특성상 부하가 크면 더 밀릴 수 있음.
+    - cron: "*/10 * * * *"
+  workflow_dispatch: {}   # 수동 실행 버튼도 사용 가능
+
+permissions:
+  contents: write   # seen_ids.json 커밋을 위해 필요
+
+jobs:
+  check-queue:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: 의존성 설치
+        run: |
+          pip install playwright requests
+          playwright install --with-deps chromium
+
+      - name: 저장된 로그인 세션 복원
+        run: |
+          echo "${{ secrets.TOPVIEW_STORAGE_STATE_B64 }}" | base64 -d > scripts/storageState.json
+
+      - name: 큐 상태 확인 + Discord 알림
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: python scripts/check_queue.py
+
+      - name: 확인 기록(seen_ids.json) 커밋
+        run: |
+          git config user.name "topview-queue-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add scripts/seen_ids.json
+          git diff --cached --quiet || git commit -m "chore: seen_ids 업데이트 [skip ci]"
+          git push
